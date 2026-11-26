@@ -74,10 +74,21 @@ create policy "Owners can remove their listings"
 
 create policy "Buyers and sellers can view their orders"
   on public.orders for select to authenticated using (auth.uid() = buyer_id or auth.uid() = seller_id);
-create policy "Buyers can create orders"
-  on public.orders for insert to authenticated with check (auth.uid() = buyer_id);
-create policy "Sellers can update order status"
-  on public.orders for update to authenticated using (auth.uid() = seller_id) with check (auth.uid() = seller_id);
+create policy "Buyers can create valid orders"
+  on public.orders for insert to authenticated
+  with check (
+    auth.uid() = buyer_id
+    and exists (
+      select 1 from public.produce_listings listing
+      where listing.id = listing_id
+        and listing.seller_id = seller_id
+        and listing.status = 'active'
+        and quantity <= listing.quantity
+    )
+  );
+
+-- Order status changes are intentionally disabled in this milestone.
+-- Add a constrained seller-only RPC before enabling order updates.
 
 -- Create a profile automatically when a new auth user signs up.
 create or replace function public.handle_new_user()
