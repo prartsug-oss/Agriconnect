@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return NextResponse.json({ user: null });
-    const { data: profile } = await supabase.from("profiles").select("full_name,role,district,business_name").eq("id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("full_name,role,district,business_name,phone,service_description,coverage_districts,is_verified").eq("id", user.id).maybeSingle();
     return NextResponse.json({ user: { id: user.id, email: user.email, ...profile } });
   } catch {
     return NextResponse.json({ user: null, configured: false });
