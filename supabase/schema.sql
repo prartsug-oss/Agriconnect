@@ -80,10 +80,10 @@ create policy "Buyers can create valid orders"
     auth.uid() = buyer_id
     and exists (
       select 1 from public.produce_listings listing
-      where listing.id = listing_id
-        and listing.seller_id = seller_id
+      where listing.id = orders.listing_id
+        and listing.seller_id = orders.seller_id
         and listing.status = 'active'
-        and quantity <= listing.quantity
+        and orders.quantity <= listing.quantity
     )
   );
 
