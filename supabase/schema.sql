@@ -561,8 +561,8 @@ create unique index if not exists payment_attempts_one_open_or_paid_per_order_id
 
 alter table public.payment_attempts enable row level security;
 
-drop policy if exists "Buyers and sellers can view related payment attempts" on public.payment_attempts;
-create policy "Buyers and sellers can view related payment attempts"
+drop policy if exists "Buyers can view their own payment attempts" on public.payment_attempts;
+create policy "Buyers can view their own payment attempts"
 on public.payment_attempts for select to authenticated
 using (auth.uid() = buyer_id);
 
