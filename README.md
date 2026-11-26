@@ -89,3 +89,12 @@ The delivery API exposes:
 - `POST /api/deliveries` with `action: "status"` - the assigned transporter marks pickup or delivery; the buyer may cancel an unassigned request.
 
 Database functions enforce order ownership, account role, quote selection and delivery status transitions. Delivery fees are stored separately from the produce order total; checkout and payment collection are not yet implemented.
+
+
+## In-app notifications
+
+Apply `supabase/notifications.sql` to an existing database to add the notifications table, secure read access and database event triggers. Fresh installations use the updated `supabase/schema.sql`.
+
+Notifications are generated automatically for new order requests, seller decisions, dispatch and completion, open delivery requests, transporter quotes, transporter assignment, pickup, delivery completion and cancellation. The dashboard bell opens the notification centre; users can mark individual notifications or all notifications as read.
+
+The API exposes `GET /api/notifications` and `PATCH /api/notifications`. Notification content is written by database triggers; the authenticated user can only mark their own notifications as read.
