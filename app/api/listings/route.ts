@@ -13,6 +13,12 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(100);
 
+    if (request.nextUrl.searchParams.get("mine") === "true") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return NextResponse.json({ error: "Sign in to view your listings." }, { status: 401 });
+      builder = builder.eq("seller_id", user.id);
+    }
+
     if (query) builder = builder.or(`title.ilike.%${query.replace(/[,%()]/g, "")}%,district.ilike.%${query.replace(/[,%()]/g, "")}%`);
     if (category && category !== "All produce") builder = builder.eq("category", category);
 
