@@ -33,7 +33,7 @@ export async function GET() {
     const isSeller = role === "farmer" || role === "supplier";
     const isTransporter = role === "logistics";
     const relevantOrders = orderRows.filter(o => isSeller ? o.seller_id === user.id : o.buyer_id === user.id);
-    const relevantDeliveries = deliveryRows.filter(d => isTransporter ? d.transporter_id === user.id : d.buyer_id === user.id || d.seller_id === user.id);
+    const relevantDeliveries = deliveryRows.filter(d => isTransporter ? d.transporter_id === user.id : role === "buyer" && d.buyer_id === user.id);
 
     const completedOrderValue = relevantOrders.filter(o => o.status === "completed").reduce((sum, o) => sum + Number(o.total_amount), 0);
     const openOrderValue = relevantOrders.filter(o => ["accepted", "in_transit"].includes(o.status)).reduce((sum, o) => sum + Number(o.total_amount), 0);
