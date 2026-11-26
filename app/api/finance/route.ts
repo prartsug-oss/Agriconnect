@@ -23,7 +23,7 @@ export async function GET() {
       supabase.from("orders").select("id,buyer_id,seller_id,quantity,unit_price,total_amount,status,created_at,produce_listings(title,unit)").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("created_at", { ascending: false }).limit(100),
       supabase.from("delivery_requests").select("id,order_id,buyer_id,seller_id,transporter_id,delivery_fee,status,created_at").order("created_at", { ascending: false }).limit(100),
     ]);
-    if (profileError) throw profileError;
+    if (profileError || !profile) throw profileError ?? new Error("Account profile not found.");
     if (ordersError) throw ordersError;
     if (deliveriesError) throw deliveriesError;
 
