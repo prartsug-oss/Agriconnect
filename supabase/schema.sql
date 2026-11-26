@@ -13,6 +13,9 @@ create table public.profiles (
   phone text,
   district text,
   business_name text,
+  service_description text,
+  coverage_districts text,
+  is_verified boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
