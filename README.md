@@ -68,3 +68,10 @@ The order workflow uses two PostgreSQL RPC functions defined in `supabase/schema
 The API exposes `PATCH /api/orders` for status changes. Order updates are performed through the constrained database function rather than direct client-side table updates.
 
 **Database setup note:** use the current `supabase/schema.sql` when setting up a fresh Supabase project. If you already ran an earlier version of the schema, do not blindly rerun the full file because the initial type and table declarations are not a migration. Apply the new functions and inventory constraint as a reviewed migration first.
+
+
+## Supplier and logistics partner directory
+
+Supplier and logistics accounts can publish a business profile from the matching dashboard section. Profiles include business name, contact phone, base district, service description and districts covered. Signed-in users can browse the supplier and logistics directories. Verification is an administrative field and is not self-awarded by businesses.
+
+The directory API provides `GET /api/directory?role=supplier`, `GET /api/directory?role=logistics`, and authenticated `PATCH /api/directory` for a user's own partner profile.
