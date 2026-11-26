@@ -34,7 +34,7 @@ The schema includes profiles, produce listings, orders and row-level security po
 
 ## Current scope
 
-This first committed milestone establishes the premium responsive dashboard, marketplace browsing, category filtering, search and an interactive create-listing preview. Production authentication, live database writes, payments, maps and logistics integrations require configuration and subsequent implementation.
+The current milestone includes the responsive dashboard, Supabase authentication, live produce listings, order requests, seller order management and database-backed inventory controls. Payments, maps, delivery-provider integrations and production analytics are not implemented yet.
 
 
 ## Live authentication and marketplace API
@@ -56,3 +56,15 @@ Without Supabase credentials, the dashboard uses illustrative sample listings. I
 
 - `GET /api/orders` - list orders for the signed-in buyer or seller.
 - `POST /api/orders` - submit an order request using the listing's server-verified seller and current price. Payment is not collected yet.
+
+
+## Order management and inventory
+
+The order workflow uses two PostgreSQL RPC functions defined in `supabase/schema.sql`:
+
+- `create_order_request` locks the selected listing, checks available stock, decrements inventory and creates the order in one transaction. Concurrent requests cannot reserve more stock than is available.
+- `update_order_status` enforces role-aware transitions: sellers can accept or reject pending orders and mark accepted orders as dispatched; buyers can confirm receipt after dispatch. Rejecting a pending order restores its reserved quantity.
+
+The API exposes `PATCH /api/orders` for status changes. Order updates are performed through the constrained database function rather than direct client-side table updates.
+
+**Database setup note:** use the current `supabase/schema.sql` when setting up a fresh Supabase project. If you already ran an earlier version of the schema, do not blindly rerun the full file because the initial type and table declarations are not a migration. Apply the new functions and inventory constraint as a reviewed migration first.
