@@ -84,19 +84,6 @@ create policy "Owners can remove their listings"
 
 create policy "Buyers and sellers can view their orders"
   on public.orders for select to authenticated using (auth.uid() = buyer_id or auth.uid() = seller_id);
-create policy "Buyers can create valid orders"
-  on public.orders for insert to authenticated
-  with check (
-    auth.uid() = buyer_id
-    and exists (
-      select 1 from public.produce_listings listing
-      where listing.id = orders.listing_id
-        and listing.seller_id = orders.seller_id
-        and listing.status = 'active'
-        and orders.quantity <= listing.quantity
-    )
-  );
-
 -- Orders are created atomically: lock the listing, verify stock, decrement it,
 -- and create the order in one transaction. This prevents overselling.
 create or replace function public.create_order_request(
@@ -109,7 +96,7 @@ returns public.orders
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $agri$
 declare
   v_user_id uuid := auth.uid();
   v_listing public.produce_listings%rowtype;
@@ -155,7 +142,7 @@ begin
 
   return v_order;
 end;
-$;
+$agri$;
 
 -- Only the seller can accept, reject or dispatch. The buyer can confirm
 -- completion after dispatch. Rejected stock is returned to the listing.
@@ -167,7 +154,7 @@ returns public.orders
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $agri$
 declare
   v_user_id uuid := auth.uid();
   v_order public.orders%rowtype;
@@ -194,7 +181,7 @@ begin
       update public.orders set status = 'cancelled' where id = p_order_id returning * into v_order;
       update public.produce_listings
       set quantity = quantity + v_order.quantity,
-          status = 'active',
+          status = case when status = 'sold' then 'active'::public.listing_status else status end,
           updated_at = now()
       where id = v_order.listing_id;
     else
@@ -212,7 +199,7 @@ begin
 
   return v_order;
 end;
-$;
+$agri$;
 
 revoke all on function public.create_order_request(uuid, numeric, text, text) from public;
 revoke all on function public.update_order_status(uuid, text) from public;
@@ -225,7 +212,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $agri$$
 begin
   insert into public.profiles (id, full_name, role)
   values (
