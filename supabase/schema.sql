@@ -91,7 +91,11 @@ begin
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-    coalesce((new.raw_user_meta_data ->> 'role')::public.account_role, 'farmer')
+    case
+      when new.raw_user_meta_data ->> 'role' in ('farmer','buyer','supplier','logistics','admin')
+        then (new.raw_user_meta_data ->> 'role')::public.account_role
+      else 'farmer'::public.account_role
+    end
   );
   return new;
 end;
