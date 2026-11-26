@@ -75,3 +75,17 @@ The API exposes `PATCH /api/orders` for status changes. Order updates are perfor
 Supplier and logistics accounts can publish a business profile from the matching dashboard section. Profiles include business name, contact phone, base district, service description and districts covered. Signed-in users can browse the supplier and logistics directories. Verification is an administrative field and is not self-awarded by businesses.
 
 The directory API provides `GET /api/directory?role=supplier`, `GET /api/directory?role=logistics`, and authenticated `PATCH /api/directory` for a user's own partner profile.
+
+
+## Delivery management
+
+Apply `supabase/delivery-management.sql` in the Supabase SQL Editor when upgrading an existing database. Fresh installations can use the complete `supabase/schema.sql` file.
+
+The delivery API exposes:
+- `GET /api/deliveries` - view delivery requests permitted by database row-level security.
+- `POST /api/deliveries` with `action: "request"` - a buyer requests delivery for an accepted order.
+- `POST /api/deliveries` with `action: "quote"` - a logistics account submits or updates its fee quote.
+- `POST /api/deliveries` with `action: "choose"` - the buyer selects a quote and assigns the transporter.
+- `POST /api/deliveries` with `action: "status"` - the assigned transporter marks pickup or delivery; the buyer may cancel an unassigned request.
+
+Database functions enforce order ownership, account role, quote selection and delivery status transitions. Delivery fees are stored separately from the produce order total; checkout and payment collection are not yet implemented.
