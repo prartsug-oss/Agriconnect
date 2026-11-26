@@ -34,7 +34,7 @@ alter table public.payment_attempts enable row level security;
 drop policy if exists "Buyers and sellers can view related payment attempts" on public.payment_attempts;
 create policy "Buyers and sellers can view related payment attempts"
 on public.payment_attempts for select to authenticated
-using (auth.uid() = buyer_id or auth.uid() = seller_id);
+using (auth.uid() = buyer_id);
 
 -- No client insert/update/delete policies. All new attempts go through this RPC.
 create or replace function public.create_mobile_money_payment(
