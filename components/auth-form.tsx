@@ -15,7 +15,7 @@ export default function AuthForm(){
   try{
    const supabase=createClient();
    if(mode==="signup"){
-    const {error}=await supabase.auth.signUp({email,password,options:{data:{full_name:String(data.get("name")||""),role:String(data.get("role")||"farmer")}}});
+    const {error}=await supabase.auth.signUp({email,password,options:{emailRedirectTo:`${window.location.origin}/auth/callback`,data:{full_name:String(data.get("name")||""),role:String(data.get("role")||"farmer")}}});
     if(error)throw error;setMessage("Account request submitted. Check your email if confirmation is enabled.");
    }else{
     const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;window.location.href="/";
