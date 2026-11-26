@@ -53,3 +53,6 @@ The Next.js proxy refreshes Supabase sessions. The server API exposes:
 - `DELETE /api/me` - sign out.
 
 Without Supabase credentials, the dashboard uses illustrative sample listings. It does not create real accounts or save listings to a shared database. Sales, order and market analytics remain placeholders until those modules are implemented.
+
+- `GET /api/orders` - list orders for the signed-in buyer or seller.
+- `POST /api/orders` - submit an order request using the listing's server-verified seller and current price. Payment is not collected yet.
