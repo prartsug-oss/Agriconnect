@@ -215,7 +215,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $agri$$
+as $agri$
 begin
   insert into public.profiles (id, full_name, role)
   values (
@@ -229,7 +229,7 @@ begin
   );
   return new;
 end;
-$$;
+$agri$;
 
 create trigger on_auth_user_created
   after insert on auth.users
