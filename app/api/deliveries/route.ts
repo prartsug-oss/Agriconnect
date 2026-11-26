@@ -10,7 +10,6 @@ export async function GET() {
     const { data, error } = await supabase
       .from("delivery_requests")
       .select("id,order_id,buyer_id,seller_id,transporter_id,pickup_district,delivery_district,delivery_fee,status,created_at,delivery_quotes(id,transporter_id,fee,notes,status,created_at)")
-      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id},transporter_id.eq.${user.id}`)
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw error;
