@@ -105,3 +105,16 @@ The API exposes `GET /api/notifications` and `PATCH /api/notifications`. Notific
 The signed-in dashboard includes a Finance section backed by `GET /api/finance`. It summarises completed and open produce order values, delivery-fee values and recent order/delivery activity. Results are scoped to the signed-in user's role and records visible under Supabase row-level security.
 
 **Important:** these figures represent order values and agreed delivery fees, not money received or paid. The platform does not yet collect payments, verify mobile-money transfers, calculate a platform commission or issue seller payouts. Payment-provider integration and a properly controlled settlement ledger remain separate work.
+
+
+## Mobile-money payment preparation
+
+For an existing Supabase database, apply `supabase/mobile-money-payments.sql` after the current schema, delivery and notifications migrations. Fresh installations can use the updated `supabase/schema.sql`.
+
+The payment API provides:
+- `GET /api/payments` - list the signed-in buyer's own payment attempts.
+- `POST /api/payments` - prepare an attempt for an accepted order using `mtn_momo` or `airtel_money` and a Uganda mobile number.
+
+The database snapshots the order amount in UGX, checks that the signed-in user is the buyer, and prevents duplicate active or successful attempts for the same order. Payment records are buyer-readable only; mobile-money numbers are not exposed to sellers. Clients cannot directly insert or update payment records or mark a payment successful.
+
+**Gateway status:** this is a secure payment-record foundation only. It does not yet call MTN MoMo or Airtel Money, send a USSD/mobile prompt, verify provider callbacks, collect money, or settle sellers. Records remain `awaiting_provider` until a verified provider integration is added. Do not treat this status as proof of payment. Never enter or store a mobile-money PIN.
