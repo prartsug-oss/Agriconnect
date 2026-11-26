@@ -118,3 +118,21 @@ The payment API provides:
 The database snapshots the order amount in UGX, checks that the signed-in user is the buyer, and prevents duplicate active or successful attempts for the same order. Payment records are buyer-readable only; mobile-money numbers are not exposed to sellers. Clients cannot directly insert or update payment records or mark a payment successful.
 
 **Gateway status:** this is a secure payment-record foundation only. It does not yet call MTN MoMo or Airtel Money, send a USSD/mobile prompt, verify provider callbacks, collect money, or settle sellers. Records remain `awaiting_provider` until a verified provider integration is added. Do not treat this status as proof of payment. Never enter or store a mobile-money PIN.
+
+
+## Profile roles and verification security
+
+For an existing database, apply `supabase/profile-security.sql` after the other migrations. Fresh installations can use the updated `supabase/schema.sql`.
+
+Account signup metadata cannot create an admin account. Regular users cannot change their own role or verification flag, and only admins can update another user's profile or change verification status. To bootstrap the first administrator, run a reviewed SQL statement in the Supabase SQL Editor while signed in as the project owner, replacing the email with the intended administrator's email:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = (
+  select id from auth.users
+  where email = 'admin@example.com'
+);
+```
+
+Do not expose the Supabase service-role key or grant admin access through public signup forms.
