@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: "Sign in to publish a listing." }, { status: 401 });
 
+    const { data: profile, error: profileError } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profileError || !profile || !["farmer", "supplier"].includes(profile.role)) {
+      return NextResponse.json({ error: "Only farmer and supplier accounts can publish produce listings." }, { status: 403 });
+    }
+
     const body = await request.json();
     const title = typeof body.title === "string" ? body.title.trim() : "";
     const category = typeof body.category === "string" ? body.category.trim() : "";
