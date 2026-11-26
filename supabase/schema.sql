@@ -23,7 +23,7 @@ create table public.produce_listings (
   title text not null,
   category text not null,
   description text,
-  quantity numeric(12,2) not null check (quantity > 0),
+  quantity numeric(12,2) not null check (quantity >= 0),
   unit text not null default 'kg',
   price_per_unit numeric(12,2) not null check (price_per_unit >= 0),
   district text not null,
@@ -97,8 +97,127 @@ create policy "Buyers can create valid orders"
     )
   );
 
--- Order status changes are intentionally disabled in this milestone.
--- Add a constrained seller-only RPC before enabling order updates.
+-- Orders are created atomically: lock the listing, verify stock, decrement it,
+-- and create the order in one transaction. This prevents overselling.
+create or replace function public.create_order_request(
+  p_listing_id uuid,
+  p_quantity numeric,
+  p_delivery_district text,
+  p_notes text default null
+)
+returns public.orders
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_user_id uuid := auth.uid();
+  v_listing public.produce_listings%rowtype;
+  v_order public.orders%rowtype;
+begin
+  if v_user_id is null then
+    raise exception 'Sign in to place an order.';
+  end if;
+  if p_quantity is null or p_quantity <= 0 then
+    raise exception 'Enter a valid order quantity.';
+  end if;
+  if p_delivery_district is null or length(trim(p_delivery_district)) = 0 or length(trim(p_delivery_district)) > 80 then
+    raise exception 'Enter a valid delivery district.';
+  end if;
+
+  select * into v_listing
+  from public.produce_listings
+  where id = p_listing_id
+  for update;
+
+  if not found or v_listing.status <> 'active' then
+    raise exception 'This listing is no longer available.';
+  end if;
+  if v_listing.seller_id = v_user_id then
+    raise exception 'You cannot order your own listing.';
+  end if;
+  if p_quantity > v_listing.quantity then
+    raise exception 'Requested quantity exceeds the available stock.';
+  end if;
+
+  update public.produce_listings
+  set quantity = quantity - p_quantity,
+      status = case when quantity - p_quantity = 0 then 'sold'::public.listing_status else status end,
+      updated_at = now()
+  where id = p_listing_id;
+
+  insert into public.orders (
+    listing_id, buyer_id, seller_id, quantity, unit_price, delivery_district, notes
+  ) values (
+    v_listing.id, v_user_id, v_listing.seller_id, p_quantity, v_listing.price_per_unit,
+    trim(p_delivery_district), nullif(left(coalesce(p_notes, ''), 500), '')
+  ) returning * into v_order;
+
+  return v_order;
+end;
+$;
+
+-- Only the seller can accept, reject or dispatch. The buyer can confirm
+-- completion after dispatch. Rejected stock is returned to the listing.
+create or replace function public.update_order_status(
+  p_order_id uuid,
+  p_status text
+)
+returns public.orders
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_user_id uuid := auth.uid();
+  v_order public.orders%rowtype;
+begin
+  if v_user_id is null then
+    raise exception 'Sign in to update an order.';
+  end if;
+
+  select * into v_order
+  from public.orders
+  where id = p_order_id
+  for update;
+
+  if not found then
+    raise exception 'Order not found.';
+  end if;
+
+  if v_user_id = v_order.seller_id then
+    if p_status = 'accepted' and v_order.status = 'pending' then
+      update public.orders set status = 'accepted' where id = p_order_id returning * into v_order;
+    elsif p_status = 'in_transit' and v_order.status = 'accepted' then
+      update public.orders set status = 'in_transit' where id = p_order_id returning * into v_order;
+    elsif p_status = 'cancelled' and v_order.status = 'pending' then
+      update public.orders set status = 'cancelled' where id = p_order_id returning * into v_order;
+      update public.produce_listings
+      set quantity = quantity + v_order.quantity,
+          status = 'active',
+          updated_at = now()
+      where id = v_order.listing_id;
+    else
+      raise exception 'This seller action is not allowed for the current order status.';
+    end if;
+  elsif v_user_id = v_order.buyer_id then
+    if p_status = 'completed' and v_order.status = 'in_transit' then
+      update public.orders set status = 'completed' where id = p_order_id returning * into v_order;
+    else
+      raise exception 'Buyers can confirm completion only after dispatch.';
+    end if;
+  else
+    raise exception 'You are not authorised to update this order.';
+  end if;
+
+  return v_order;
+end;
+$;
+
+revoke all on function public.create_order_request(uuid, numeric, text, text) from public;
+revoke all on function public.update_order_status(uuid, text) from public;
+grant execute on function public.create_order_request(uuid, numeric, text, text) to authenticated;
+grant execute on function public.update_order_status(uuid, text) to authenticated;
 
 -- Create a profile automatically when a new auth user signs up.
 create or replace function public.handle_new_user()
