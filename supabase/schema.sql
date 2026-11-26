@@ -65,12 +65,22 @@ create policy "Users can update their own profile"
 
 create policy "Active listings are visible to everyone"
   on public.produce_listings for select using (status = 'active' or auth.uid() = seller_id);
-create policy "Farmers can create listings"
-  on public.produce_listings for insert to authenticated with check (auth.uid() = seller_id);
+create policy "Farmers and suppliers can create listings"
+  on public.produce_listings for insert to authenticated
+  with check (
+    auth.uid() = seller_id
+    and exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role in ('farmer', 'supplier')
+    )
+  );
 create policy "Owners can update their listings"
-  on public.produce_listings for update to authenticated using (auth.uid() = seller_id) with check (auth.uid() = seller_id);
+  on public.produce_listings for update to authenticated
+  using (auth.uid() = seller_id and exists (select 1 from public.profiles where id = auth.uid() and role in ('farmer','supplier')))
+  with check (auth.uid() = seller_id and exists (select 1 from public.profiles where id = auth.uid() and role in ('farmer','supplier')));
 create policy "Owners can remove their listings"
-  on public.produce_listings for delete to authenticated using (auth.uid() = seller_id);
+  on public.produce_listings for delete to authenticated
+  using (auth.uid() = seller_id and exists (select 1 from public.profiles where id = auth.uid() and role in ('farmer','supplier')));
 
 create policy "Buyers and sellers can view their orders"
   on public.orders for select to authenticated using (auth.uid() = buyer_id or auth.uid() = seller_id);
