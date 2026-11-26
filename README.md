@@ -93,7 +93,7 @@ Database functions enforce order ownership, account role, quote selection and de
 
 ## In-app notifications
 
-Apply `supabase/notifications.sql` to an existing database to add the notifications table, secure read access and database event triggers. Fresh installations use the updated `supabase/schema.sql`.
+For an existing database, apply `supabase/delivery-management.sql` first, then `supabase/notifications.sql` to add the notifications table, secure read access and database event triggers. Fresh installations use the updated `supabase/schema.sql`.
 
 Notifications are generated automatically for new order requests, seller decisions, dispatch and completion, open delivery requests, transporter quotes, transporter assignment, pickup, delivery completion and cancellation. The dashboard bell opens the notification centre; users can mark individual notifications or all notifications as read.
 
