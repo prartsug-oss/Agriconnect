@@ -98,3 +98,10 @@ For an existing database, apply `supabase/delivery-management.sql` first, then `
 Notifications are generated automatically for new order requests, seller decisions, dispatch and completion, open delivery requests, transporter quotes, transporter assignment, pickup, delivery completion and cancellation. The dashboard bell opens the notification centre; users can mark individual notifications or all notifications as read.
 
 The API exposes `GET /api/notifications` and `PATCH /api/notifications`. Notification content is written by database triggers; the authenticated user can only mark their own notifications as read.
+
+
+## Financial overview
+
+The signed-in dashboard includes a Finance section backed by `GET /api/finance`. It summarises completed and open produce order values, delivery-fee values and recent order/delivery activity. Results are scoped to the signed-in user's role and records visible under Supabase row-level security.
+
+**Important:** these figures represent order values and agreed delivery fees, not money received or paid. The platform does not yet collect payments, verify mobile-money transfers, calculate a platform commission or issue seller payouts. Payment-provider integration and a properly controlled settlement ledger remain separate work.
