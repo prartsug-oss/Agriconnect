@@ -15,8 +15,23 @@ drop policy if exists "Users can read their own notifications" on public.notific
 create policy "Users can read their own notifications" on public.notifications
 for select to authenticated using (auth.uid() = user_id);
 drop policy if exists "Users can mark their own notifications read" on public.notifications;
-create policy "Users can mark their own notifications read" on public.notifications
-for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create or replace function public.mark_notification_read(p_notification_id uuid default null)
+returns integer language plpgsql security definer set search_path = ''
+as $agri$
+declare v_uid uuid := auth.uid(); v_count integer;
+begin
+  if v_uid is null then raise exception 'Sign in to update notifications.'; end if;
+  if p_notification_id is null then
+    update public.notifications set is_read = true where user_id = v_uid and is_read = false;
+  else
+    update public.notifications set is_read = true where id = p_notification_id and user_id = v_uid and is_read = false;
+  end if;
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$agri$;
+revoke all on function public.mark_notification_read(uuid) from public;
+grant execute on function public.mark_notification_read(uuid) to authenticated;
 
 create or replace function public.notify_order_events()
 returns trigger language plpgsql security definer set search_path = ''
